@@ -26,17 +26,17 @@ These fields MUST be present for the project to build correctly:
 Two **orthogonal** axes steer how the book reads. Both are settled during intake
 (Phases 1–2) and consulted while writing.
 
-| Field           | Type   | Default                | Forwarded to compose? | Description                                                                                               |
-| --------------- | ------ | ---------------------- | --------------------- | --------------------------------------------------------------------------------------------------------- |
-| `writing_style` | string | `practical`            | Yes                   | The _tone_ axis (e.g. `"informative and engaging"`).                                                      |
-| `book_type`     | string | `nonfiction_practical` | No                    | The _structural_ axis — how the book is shaped. Selects the structural style guide; forwarded to compose. |
+| Field           | Type   | Default         | Forwarded to compose? | Description                                                                                               |
+| --------------- | ------ | --------------- | --------------------- | --------------------------------------------------------------------------------------------------------- |
+| `writing_style` | string | `practical`     | Yes                   | The _tone_ axis (e.g. `"informative and engaging"`).                                                      |
+| `book_type`     | string | none (required) | Yes                   | The _structural_ axis — how the book is shaped. Selects the structural style guide; forwarded to compose. |
 
 `book_type` is one of `nonfiction_practical`, `nonfiction_narrative`,
 `nonfiction_reference`, `memoir`, `fiction`, or `childrens`. It is recorded in
 `cc-config.yml` so a resumed session keeps the same structural guide
 (`book-type-style-guides.md`, fetched into the prompt cache), and `publish_book.py`
-forwards it to `/books/compose` when set (the server validates the key and records
-it on the book; unset books get the server default). It shapes the prose you write,
+forwards it to `/books/compose` (the server validates the key and records it on
+the book; a book without one is rejected with 422 `book_info_incomplete`). It shapes the prose you write,
 not the typeset output.
 
 ## Publishing Information Fields
@@ -94,7 +94,8 @@ title: "The Ultimate Guide to Chengdu Cuisine"
 subtitle: "A Journey Through Sichuan's Most Beloved Dishes"
 author: "Richard Sprague"
 writing_style: "informative and engaging" # tone axis (forwarded to compose)
-book_type: "nonfiction_practical" # structural axis (local; selects the style guide)
+book_type: "nonfiction_practical" # structural axis (required; selects the style guide)
+declined: [] # fields the user explicitly declined: description, book_blurb, author_bio
 date: "2026-02-10"
 year: "2026"
 page_count: 0 # Updated after PDF build
@@ -176,10 +177,14 @@ enhanced_summary: |
 
 ## Validation Rules
 
-For the thin-client publish flow, only `title` and `author` are required —
-`publish_book.py` reads them from `cc-config.yml` (falling back to
+For the thin-client publish flow, `title`, `author`, and `book_type` are
+required — `publish_book.py` reads them from `cc-config.yml` (falling back to
 `outline.yml`'s `book.title`) and forwards `subtitle`, `description`,
-`writing_style`, `book_type`, and `trim_size` when present. `source_materials`
+`writing_style`, `book_type`, `trim_size`, and `declined` (as `declined_fields`)
+when present. `description`, the blurb (`blurb.md`), and the author bio
+(`author.md`) must each be supplied or listed under `declined:` — and only after
+the user explicitly declined it; otherwise compose returns 422
+`book_info_incomplete`. `source_materials`
 is recorded locally to steer your writing but is **not** forwarded —
 `/books/compose` rejects unknown fields. The platform performs the authoritative
 validation when scaffolding (`POST /books/compose`); fields like

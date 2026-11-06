@@ -38,7 +38,8 @@ Usage:
         --book-id <uuid> --output ~/Books/my-book-source.zip
 
 Local content layout read by `publish` (--project-dir):
-    cc-config.yml          title, author, subtitle?, description?, writing_style?, book_type?, trim_size?
+    cc-config.yml          title, author, book_type, subtitle?, description?, writing_style?, trim_size?,
+                           declined? (fields the user explicitly declined: description/book_blurb/author_bio)
     outline.yml            chapters: [{number, chapter_title, chapter_description?}]
     chapters/chapter_<N>.qmd   (or .md)  — one per outline chapter
     introduction.md        book preface/introduction prose
@@ -79,6 +80,10 @@ from proofbound_portable.limits import (  # noqa: E402
     MIN_TOTAL_TARGET_WORDS,
 )
 
+# The skill's own version is its SKILL.md frontmatter `version:`, the one copy a
+# claude.ai upload and a Claude Code install both carry beside scripts/.
+SKILL_MD = Path(__file__).resolve().parent.parent / "SKILL.md"
+
 PROMPTS_CACHE = Path.home() / ".proofbound" / "cache" / "prompts"
 # Script Mode's server-chosen default model, cached beside the prompts and read
 # by generate_chapters.py (same constant there; a test pins the two together).
@@ -89,8 +94,13 @@ COMPOSE_TIMEOUT = 60
 POLL_TIMEOUT = 30
 SOURCE_TIMEOUT = 120
 
-# How long to wait for a server-side render before giving up the poll loop.
-DEFAULT_POLL_DEADLINE = 600  # seconds
+# How long to wait for a server-side render before giving up the poll loop. Must
+# exceed the server's whole-job backstop (RENDER_JOB_TIMEOUT_SECONDS, 2040s: two
+# render passes, since the corrective gutter re-render counts) or a
+# slow-but-successful render reads as timed out. Queue wait behind other renders
+# is not bounded, so a timeout still only means "may still finish". A parity test
+# pins it.
+DEFAULT_POLL_DEADLINE = 2400  # seconds
 POLL_INTERVAL = 5  # seconds
 
 # Matches the server BookComposeRequest.bibliography_content max_length (200_000).
@@ -116,6 +126,54 @@ def _api_headers() -> dict[str, str]:
 # ============================================
 
 
+def _skill_version() -> str | None:
+    """This copy's version from the SKILL.md frontmatter, or None if unreadable."""
+    try:
+        text = SKILL_MD.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    if not text.startswith("---"):
+        return None
+    for line in text.split("\n")[1:]:
+        if line.strip() == "---":
+            break
+        key, _, value = line.partition(":")
+        if key.strip() == "version":
+            return value.strip() or None
+    return None
+
+
+def _version_tuple(version: str) -> tuple[int, ...] | None:
+    try:
+        return tuple(int(part) for part in version.split("."))
+    except ValueError:
+        return None
+
+
+def _stale_skill_warning(policy: dict | None) -> str | None:
+    """Return a re-upload warning when this skill is older than the server's minimum.
+
+    A skill uploaded to claude.ai cannot update itself, so the server names the
+    oldest version it supports (``book_builder_skill.minimum``). Advisory: an old
+    skill still works, it just follows a playbook the server has moved past.
+    """
+    minimum = (policy or {}).get("minimum")
+    if not minimum:
+        return None
+    ours = _skill_version()
+    ours_t, theirs_t = (_version_tuple(ours) if ours else None), _version_tuple(minimum)
+    if theirs_t is None:
+        # A minimum we cannot parse is our own formatting slip, not the user's.
+        return None
+    if ours_t is not None and ours_t >= theirs_t:
+        return None
+    return (
+        f"⚠️  This book-builder skill is version {ours or 'unknown'}; ProofBound now expects at least "
+        f"{minimum}.\n   Download the current skill and install it again (on claude.ai, delete the old "
+        "skill and add the new zip rather than replacing it)."
+    )
+
+
 def cmd_fetch_prompts(args):
     out_dir = Path(args.output_dir).expanduser()
     base_url = get_api_url()
@@ -124,6 +182,8 @@ def cmd_fetch_prompts(args):
     try:
         resp = httpx.get(
             f"{base_url}/books/prompts",
+            # client=skill adds book-workflow-narrative.md rendered for this skill.
+            params={"client": "skill"},
             headers=_api_headers(),
             timeout=PROMPTS_TIMEOUT,
         )
@@ -161,6 +221,10 @@ def cmd_fetch_prompts(args):
         print("⚠️  Server sent no Script Mode model; generate_chapters.py cannot run until it does.")
 
     print(f"\n✅ Cached {written} prompt template(s) → {out_dir}")
+
+    warning = _stale_skill_warning(body.get("book_builder_skill"))
+    if warning:
+        print(f"\n{warning}")
 
 
 # ============================================
@@ -312,6 +376,14 @@ def _build_compose_payload(args) -> dict:
     # Structural axis; the server validates the key (BookComposeRequest.book_type).
     if cc_config.get("book_type"):
         payload["book_type"] = cc_config["book_type"]
+    # Fields the user explicitly declined. Forwarded as-is: the server owns the
+    # completeness rule and rejects unknown or conflicting names.
+    declined = cc_config.get("declined")
+    if declined is not None:
+        if not isinstance(declined, list):
+            _fail("`declined:` in cc-config.yml must be a list of field names")
+        if declined:
+            payload["declined_fields"] = declined
 
     trim_size = args.trim_size or cc_config.get("trim_size")
     if trim_size:
@@ -399,9 +471,9 @@ def _poll_until_done(base_url: str, book_id: str, deadline: int) -> dict:
 
         if time.monotonic() - start > deadline:
             _fail(
-                f"timed out after {deadline}s waiting for render "
-                f"(book_id={book_id}, last status={status}). "
-                f"Check later with: publish_book.py status --book-id {book_id}"
+                f"stopped waiting after {deadline}s (book_id={book_id}, last "
+                f"status={status}). The render may still finish on the server; "
+                f"check with: publish_book.py status --book-id {book_id}"
             )
         time.sleep(POLL_INTERVAL)
 
@@ -421,6 +493,25 @@ def _download_source(base_url: str, book_id: str, output: Path) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_bytes(resp.content)
     print(f"   ✅ Source → {output} ({len(resp.content) / 1024:.0f} KB)")
+
+
+def _fail_if_book_info_incomplete(resp) -> None:
+    """Turn a 422 ``book_info_incomplete`` into the missing list plus the server's hint.
+
+    Any other 422 returns, so the caller reports it raw.
+    """
+    try:
+        detail = resp.json().get("detail")
+    except ValueError:
+        return
+    if not isinstance(detail, dict) or detail.get("error") != "book_info_incomplete":
+        return
+    missing = ", ".join(detail.get("missing") or []) or "(none)"
+    _fail(
+        f"book information incomplete — missing: {missing}.\n"
+        f"{detail.get('hint', '')}\n"
+        "Nothing was rendered; your local content is unchanged."
+    )
 
 
 def cmd_publish(args):
@@ -450,6 +541,8 @@ def cmd_publish(args):
             "Your local content is unchanged — wait for the rolling window to "
             "roll over, or upgrade at https://proofbound.com to keep rendering."
         )
+    if resp.status_code == 422:
+        _fail_if_book_info_incomplete(resp)
     if resp.status_code not in (200, 202):
         _fail(f"compose failed: {resp.status_code} — {resp.text}")
 

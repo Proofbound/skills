@@ -70,7 +70,11 @@ def is_excluded_project_path(
       ``.ssh/`` — so dotfiles are excluded wholesale rather than named one by
       one. Nothing a book project needs is dot-prefixed: ``_quarto.yml`` and
       ``_book/`` lead with an underscore, and the only dot-prefixed files the
-      templates scaffold are ``.gitignore`` and ``.gitkeep``. This matches
+      templates scaffold are ``.gitignore`` and ``.gitkeep``,
+      plus the derived files ProofBound regenerates on every render and must NOT
+      persist or export (``.pb-build-stamp.def``, managed Lua filters such as
+      ``.pb-bidi.lua``; see ``pdf_headers.ManagedFilter``). Relying on this rule
+      is what keeps ``.lua`` off the upload allowlist. This matches
       ``zip_intake._is_ignored_entry``, which already drops dot-prefixed
       entries on the receiving side; this closes the *sending* side, where a
       secret would otherwise be read off disk, zipped, and shipped to R2.

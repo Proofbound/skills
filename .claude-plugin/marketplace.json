@@ -12,7 +12,7 @@
       "name": "proofbound",
       "source": {
         "source": "git-subdir",
-        "url": "https://github.com/Proofbound/claude-plugins.git",
+        "url": "https://github.com/Proofbound/skills.git",
         "path": "plugins/proofbound"
       },
       "description": "Write a book in conversation with Claude, then publish it to your ProofBound library. ProofBound renders the PDF and stores the book. Requires a ProofBound account.",
