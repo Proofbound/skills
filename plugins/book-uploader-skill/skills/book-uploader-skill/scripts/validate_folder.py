@@ -28,7 +28,7 @@ from _quarto_output import (  # noqa: E402
     output_dir_names,
 )
 from _upload_plan import SymlinkEscapeError, iter_upload_files  # noqa: E402
-from proofbound_portable.book_info import BOOK_TYPES, DECLINABLE_BOOK_FIELDS  # noqa: E402
+from proofbound_portable.book_info import BOOK_TYPES, DECLINABLE_BOOK_FIELDS, find_blurb  # noqa: E402
 from proofbound_portable.table_check import describe, find_wide_tables  # noqa: E402
 from proofbound_portable.trim import DEFAULT_TRIM_SIZE, TRIM_SIZES  # noqa: E402
 
@@ -124,7 +124,9 @@ def check_book_info(project_path: Path, author: dict) -> tuple[list[str], list[s
     warning here because ``autofix_folder.py`` writes one; a malformed ``declined:``
     would be rejected by the server, so it blocks. Whether a field is supplied
     mirrors the server's readers: description from ``outline.yml`` (else
-    ``cc-config.yml``), the blurb from ``blurb.md``, the bio from ``author.md``.
+    ``cc-config.yml``), the blurb from ``blurb.md`` (else ``blurb:`` in ``covers/cover-config.yml``), the
+    bio from ``author.md``. A field neither supplied nor declined only warns: the
+    ``/books/upload`` endpoint accepts it, but the book arrives without that field.
     """
     blockers: list[str] = []
     warnings: list[str] = []
@@ -140,30 +142,44 @@ def check_book_info(project_path: Path, author: dict) -> tuple[list[str], list[s
         warnings.append(f"cc-config.yml book_type '{book_type}' is not one of: {', '.join(BOOK_TYPES)}")
 
     declined = cc.get("declined")
-    if declined is None:
-        return blockers, warnings
-    if not isinstance(declined, list):
+    names: list[str] = []
+    if declined is not None and not isinstance(declined, list):
         blockers.append("cc-config.yml `declined:` must be a list of field names")
         return blockers, warnings
-    names = [str(n) for n in declined]
-    allowed = ", ".join(DECLINABLE_BOOK_FIELDS)
-    for name in names:
-        if name not in DECLINABLE_BOOK_FIELDS:
-            blockers.append(f"cc-config.yml declined: '{name}' is not declinable (allowed: {allowed})")
-    for name in sorted({n for n in names if names.count(n) > 1}):
-        blockers.append(f"cc-config.yml declined: lists '{name}' more than once")
+    if declined is not None:
+        names = [str(n) for n in declined]
+        allowed = ", ".join(DECLINABLE_BOOK_FIELDS)
+        for name in names:
+            if name not in DECLINABLE_BOOK_FIELDS:
+                blockers.append(f"cc-config.yml declined: '{name}' is not declinable (allowed: {allowed})")
+        for name in sorted({n for n in names if names.count(n) > 1}):
+            blockers.append(f"cc-config.yml declined: lists '{name}' more than once")
 
     outline_book = _yaml_mapping(project_path / "outline.yml").get("book")
     outline_description = outline_book.get("description") if isinstance(outline_book, dict) else None
-    blurb_file = project_path / "blurb.md"
     supplied = {
         "description": bool(str(outline_description or cc.get("description") or "").strip()),
-        "book_blurb": blurb_file.is_file() and bool(blurb_file.read_text(encoding="utf-8", errors="replace").strip()),
+        "book_blurb": bool(find_blurb(project_path, _yaml_mapping)[1]),
         "author_bio": bool(author["bio_found"]) and bool(author["bio_size_chars"]),
+    }
+    how_to_supply = {
+        "description": "add `description:` to outline.yml (book:) or cc-config.yml",
+        "book_blurb": "add blurb.md (or blurb: in covers/cover-config.yml)",
+        "author_bio": "add author.md",
+    }
+    consequence = {
+        "description": "the book will arrive without a description",
+        "book_blurb": "the book will arrive without back-cover copy",
+        "author_bio": "the book will arrive without an author bio",
     }
     for name in DECLINABLE_BOOK_FIELDS:
         if name in names and supplied[name]:
             blockers.append(f"{name} is both supplied and listed in cc-config.yml declined: — remove one")
+        elif name not in names and not supplied[name]:
+            warnings.append(
+                f"{name} not supplied and not declined — {consequence[name]}; "
+                f"{how_to_supply[name]} or list it in cc-config.yml declined:"
+            )
     return blockers, warnings
 
 
