@@ -96,6 +96,8 @@ with pass 1, the shape is enforced by the caller, not stated in the template.
 - `target_words` (integer) - Target word count for chapter
 - `craft_rules` (string, optional) - Line-level craft bullets (the same four as the
   served `guidance-craft.md`); rendered as a **Craft.** block when set
+- `table_rules` (string, optional) - Table authoring rules (the served
+  `guidance-craft.md` Tables section); rendered as a **Tables.** block when set
 
 **Key Rules Enforced**:
 
@@ -255,16 +257,6 @@ Book and chapter context come from `system.jinja2`, which accompanies every sect
 ---
 
 ## Bibliography
-
-### `bibliography-query.jinja2`
-
-**Purpose**: Query for bibliography generation
-
-**Variables**: (TBD - check implementation)
-
-**Output**: Query for finding relevant citations
-
-**Usage**: Reference management workflow
 
 ### `bibliography-convert.jinja2`
 

@@ -106,6 +106,30 @@ def load_style_guides(prompts_dir: Path) -> dict[str, str]:
     return guides
 
 
+CRAFT_GUIDE_FILE = "guidance-craft.md"
+
+
+def load_table_rules(prompts_dir: Path) -> str:
+    """Return the "## Tables" section of ``guidance-craft.md`` (cached by fetch-prompts).
+
+    The server renders that section from the same TABLE_RULES its own chapter system
+    prompt carries, so Script Mode gets the identical table rules. Fails if the cache
+    lacks the file or predates the section (GUIDANCE_VERSION < 1.12.0).
+    """
+    path = prompts_dir / CRAFT_GUIDE_FILE
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise SystemExit(
+            f"❌ ERROR: no craft guide in {path} ({exc}).\n"
+            "Refresh the cache: uv run python scripts/publish_book.py fetch-prompts"
+        ) from exc
+    m = re.search(r"^## Tables\s*\n(.*?)(?=^## |\Z)", text, re.MULTILINE | re.DOTALL)
+    if not m or not m.group(1).strip():
+        raise SystemExit(f"❌ ERROR: {path} has no '## Tables' section. Refresh with fetch-prompts.")
+    return m.group(1).strip()
+
+
 def resolve_style(cc_config: dict, guides: dict[str, str]) -> tuple[str, str]:
     """Return (writing_style, style_guide) from cc-config.yml.
 
@@ -245,6 +269,7 @@ def generate_chapter(
     model: str,
     max_tokens: int,
     guides: dict[str, str],
+    table_rules: str,
 ) -> tuple[str, int]:
     """Generate content for a single chapter, one section per beat.
 
@@ -258,6 +283,7 @@ def generate_chapter(
         model: AI model ID
         max_tokens: Output-token ceiling per section call
         guides: {book_type: style guide} parsed from the cached style-guides file
+        table_rules: the craft guide's Tables section (load_table_rules)
 
     Returns:
         Tuple of (generated_content, tokens_used)
@@ -278,6 +304,7 @@ def generate_chapter(
     system_prompt = system_template.render(
         writing_style=writing_style,
         style_guide=style_guide,
+        table_rules=table_rules,
         title=cc_config["title"],
         author=cc_config["author"],
         topic=outline["book"]["description"],
@@ -429,6 +456,7 @@ Exit codes:
     env = setup_jinja_environment(args.prompts_dir.expanduser())
     guides = load_style_guides(args.prompts_dir.expanduser())
     resolve_style(cc_config, guides)  # fail before any API spend
+    table_rules = load_table_rules(args.prompts_dir.expanduser())
 
     # Initialize Anthropic client with 5-minute timeout (same as ai-clients)
     client = Anthropic(api_key=api_key, timeout=300.0)
@@ -466,7 +494,7 @@ Exit codes:
 
         try:
             content, tokens_used = generate_chapter(
-                client, env, project_path, cc_config, outline, chapter, model, max_tokens, guides
+                client, env, project_path, cc_config, outline, chapter, model, max_tokens, guides, table_rules
             )
 
             # Write to .qmd file

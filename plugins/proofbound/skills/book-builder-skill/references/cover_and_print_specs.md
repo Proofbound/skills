@@ -103,6 +103,20 @@ Height = 9" + (2 × 0.125")
 | **Safe Zone**        | 0.375" (9.525mm) inside  | Important graphics       |
 | **Bleed Zone**       | 0.125" (3.175mm) outside | Background colors/images |
 
+### Interior Margins (Gutter)
+
+KDP also validates the **interior** PDF: the inside (gutter) margin must meet the tier for the page count, or the upload is rejected ("Insufficient gutter"). Outside, top and bottom need only 0.25" (0.375" with bleed).
+
+| Pages   | Minimum inside margin |
+| ------- | --------------------- |
+| 24–150  | 0.375" (9.5mm)        |
+| 151–300 | 0.5" (12.7mm)         |
+| 301–500 | 0.625" (15.9mm)       |
+| 501–700 | 0.75" (19.1mm)        |
+| 701–828 | 0.875" (22.2mm)       |
+
+ProofBound sets this for you: every render writes `inner=` into the Quarto PDF geometry (0.75" by default, which passes up to 700 pages, widened to 0.875" when the estimated or actual length calls for it) and records the value as `interior_gutter_in` on the book. The KDP publishing kit's pre-flight compares it with the tier for the final page count. Lulu publishes a similar table as a recommendation only and does not reject on margins.
+
 ---
 
 ## Lulu (Print-on-Demand)
