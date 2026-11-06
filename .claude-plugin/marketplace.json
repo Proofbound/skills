@@ -50,6 +50,17 @@
       "skills": [
         "./"
       ]
+    },
+    {
+      "name": "book-uploader-skill",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/Proofbound/skills.git",
+        "path": "plugins/book-uploader-skill"
+      },
+      "description": "ProofBound book uploader skill — validate a Quarto folder, auto-fix missing config, scan for secrets, then upload via the admin script",
+      "homepage": "https://proofbound.com",
+      "category": "productivity"
     }
   ]
 }
