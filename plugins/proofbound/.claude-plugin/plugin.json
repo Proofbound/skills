@@ -1,7 +1,7 @@
 {
   "name": "proofbound",
   "version": "4.8.1",
-  "description": "ProofBound book-builder skill — thin HTTP client; prose written locally, scaffold/render/persist server-side",
+  "description": "Write a book in conversation with Claude, then publish it to your ProofBound library. ProofBound renders the PDF and stores the book. Requires a ProofBound account.",
   "author": {
     "name": "ProofBound",
     "url": "https://proofbound.com"

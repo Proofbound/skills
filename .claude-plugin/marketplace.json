@@ -58,7 +58,7 @@
         "url": "https://github.com/Proofbound/skills.git",
         "path": "plugins/book-uploader-skill"
       },
-      "description": "ProofBound book uploader skill — validate a Quarto folder, auto-fix missing config, scan for secrets, then upload via the admin script",
+      "description": "Upload a Quarto book project or loose .qmd chapters to your ProofBound library. Checks the config, scans for secrets, and renders if there's no PDF. Requires a ProofBound account.",
       "homepage": "https://proofbound.com",
       "category": "productivity"
     }
