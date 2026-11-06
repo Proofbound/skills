@@ -1,0 +1,69 @@
+ProofBound Source-Available License
+Copyright (c) 2026 Ensembio, Inc., doing business as Proofbound. All rights reserved.
+
+This software and its documentation (the "Software") are made available so
+that you can read them and use them with the Proofbound service at
+https://proofbound.com (the "Service"). "Proofbound", "we" and "us" mean
+Ensembio, Inc. Publishing the source does not place the Software in the
+public domain or under an open-source license.
+
+1. What you may do. While you hold a Proofbound account, you may:
+   (a) install and run the Software, keep backup copies, and modify your own
+       copy, to create, edit and publish works through that account;
+   (b) let an AI assistant or model provider (for example Claude) read and
+       process the Software as part of running it for you; and
+   (c) let people you authorize, such as co-authors, editors or assistants,
+       do the same on your behalf, under this license.
+
+2. Your content is not the Software. Your manuscripts, notes, outlines,
+   drafts, generated text, and exported or published books ("Your Content")
+   are not covered by the restrictions in Section 3, whether or not they are
+   finished or published. You need not credit Proofbound in Your Content.
+   Ownership of a book produced through the Service is governed by the Terms
+   of Service; this license neither grants nor takes away any right in it.
+
+3. What you may not do. You may not, and may not help anyone else to:
+   (a) redistribute, publish, sublicense, sell or rent the Software or a
+       modified version of it, except as Section 1 allows;
+   (b) incorporate the Software, or a substantial part of its prompts,
+       workflows, schemas or documentation, into a Competing Service, or use
+       them to train or evaluate a model for one. A "Competing Service" is a
+       product or service, offered to others, that generates, composes or
+       publishes books. This does not restrict general knowledge or skills
+       you gain from reading the Software;
+   (c) reverse engineer, decompile, scrape or otherwise attempt to derive the
+       source code, prompts, models or internal design of the Service, or use
+       the Software to probe, overload or interfere with the Service;
+   (d) remove or bypass any sign-in, rate limit or access control; or
+   (e) remove this license or the copyright notices from copies of the
+       Software.
+
+4. Relationship to the Terms of Service. Your use of the Service is governed
+   by the Proofbound Terms of Service at https://proofbound.com/terms,
+   including its provisions on responsibility for the Work, indemnity, limit
+   of liability, and governing law and disputes. The Terms' prohibition on
+   modifying "our services" applies to the hosted Service; Section 1(a) of
+   this license permits modifying your own copy of the Software. On anything
+   else, if this license and the Terms conflict, the Terms control.
+
+5. Your responsibility. You are solely responsible for Your Content and for
+   how you use, publish and distribute it, including its accuracy, legality,
+   and any rights of third parties. Proofbound does not review, endorse or
+   take responsibility for Your Content.
+
+6. No warranty. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+   KIND, EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A
+   PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+
+7. Limitation of liability. TO THE FULLEST EXTENT PERMITTED BY LAW,
+   PROOFBOUND WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
+   CONSEQUENTIAL OR PUNITIVE DAMAGES, OR FOR ANY CLAIM ARISING FROM YOUR
+   CONTENT, ARISING OUT OF OR RELATED TO THE SOFTWARE.
+
+8. Termination. This license ends automatically if you breach it or your
+   Proofbound account is closed. You must then stop using the Software and
+   delete your copies. Termination does not affect Your Content or any rights
+   you hold in a book under the Terms of Service.
+
+9. Reserved rights. Proofbound reserves all rights not expressly granted.
+   Questions: team@proofbound.com

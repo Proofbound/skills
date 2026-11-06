@@ -1,0 +1,12 @@
+{
+  "name": "book-uploader-skill",
+  "version": "0.1.11",
+  "description": "ProofBound book uploader skill — validate a Quarto folder, auto-fix missing config, scan for secrets, then upload via the admin script",
+  "author": {
+    "name": "ProofBound",
+    "url": "https://proofbound.com"
+  },
+  "homepage": "https://proofbound.com",
+  "repository": "https://github.com/Proofbound/skills",
+  "license": "LicenseRef-ProofBound-Source-Available"
+}
