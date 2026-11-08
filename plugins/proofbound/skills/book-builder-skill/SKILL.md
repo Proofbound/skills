@@ -2,7 +2,7 @@
 name: book-builder-skill
 description: Conversational book creation workflow for ProofBound. Use when users want to "create a book", "help me write a book", "turn my notes into a book", or upload documents mentioning books or publishing. Guides through intake, design, TOC, and chapter/intro/summary writing locally, then publishes via the ProofBound API — the platform scaffolds the canonical Quarto project, renders the PDF, and saves the book to the user's library. Requires a ProofBound login; no local Quarto/TinyTeX needed. If the ProofBound MCP connector is available in this session, prefer its get_book_workflow (the canonical, always-current workflow); this skill is the standalone Claude Code / filesystem fallback.
 license: ProofBound Source-Available License (see LICENSE)
-version: 4.8.1
+version: 4.8.2
 ---
 
 # ProofBound Book Builder Skill
@@ -437,7 +437,7 @@ Run the narrative's pre-publish checklist first. Then:
    ```bash
    uv run scripts/publish_book.py publish --project-dir ~/Books/<slug> \
      --authoring-model claude-opus-5 \
-     --workflow-version book-builder-skill/4.8.1
+     --workflow-version book-builder-skill/4.8.2
    ```
 
    This reads the local content, `POST`s it to `/books/compose`, then polls

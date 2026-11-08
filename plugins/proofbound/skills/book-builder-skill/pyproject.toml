@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "book-builder-skill"
-version = "4.8.1"
+version = "4.8.2"
 description = "ProofBound book-builder skill — thin HTTP client; prose written locally, scaffold/render/persist server-side"
 authors = [{name = "Proofbound", email = "team@proofbound.com"}]
 license = {text = "LicenseRef-ProofBound-Source-Available"}

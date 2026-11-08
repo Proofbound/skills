@@ -1,6 +1,6 @@
 {
   "name": "proofbound",
-  "version": "4.8.1",
+  "version": "4.8.2",
   "description": "Write a book in conversation with Claude, then publish it to your ProofBound library. ProofBound renders the PDF and stores the book. Requires a ProofBound account.",
   "author": {
     "name": "ProofBound",
