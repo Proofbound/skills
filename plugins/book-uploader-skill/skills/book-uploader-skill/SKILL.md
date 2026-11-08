@@ -2,7 +2,7 @@
 name: book-uploader-skill
 description: Upload a local Quarto project or loose .qmd chapters to a ProofBound account (validates, fixes config, scans secrets, renders if no PDF). Triggers - upload to ProofBound, import a Quarto project.
 license: ProofBound Source-Available License (see LICENSE)
-version: 0.1.11
+version: 0.1.12
 ---
 
 # ProofBound Book Uploader Skill
@@ -117,7 +117,7 @@ This writes `_quarto.yml` and `cc-config.yml`. Behavior:
 - **Never overwrites** existing files. If `_quarto.yml` is present, the script leaves it alone and warns. Same for `cc-config.yml`.
 - **Emits a simple template** that renders with Quarto's default `pdflatex` engine — no XeLaTeX, no Crimson Pro/Inter requirement. The platform applies the full ProofBound styling when the book is rebuilt server-side.
 - **Sets interior page geometry** from `--trim-size` (`6x9` default, or `a5` / `digest`), including the KDP inside margin (`inner=0.75in`, `outer=0.75in`; the server widens the gutter at render time if the book's length needs it). Omit the flag for standard US Trade 6×9.
-- **Declares `book_type` in `cc-config.yml`** (default `nonfiction_practical`, `--book-type` to change): the server requires one and never picks it for the author. An existing `cc-config.yml` without it gets the line appended, and the script says so. To leave the description, back-cover blurb or author bio out on purpose, record the user's explicit decline as `declined: [author_bio]` in `cc-config.yml`; `validate_folder.py` checks the names.
+- **Declares `book_type` in `cc-config.yml`** (default `nonfiction_practical`, `--book-type` to change): the server requires one and never picks it for the author. An existing `cc-config.yml` without it gets the line appended, and the script says so. To leave the description, back-cover blurb or author bio out on purpose, record the user's explicit decline as `declined: [author_bio]` in `cc-config.yml`; `validate_folder.py` checks the names and warns about any of the three that is neither supplied (the blurb counts from `blurb.md` or `blurb:` in `covers/cover-config.yml`) nor declined.
 - **Declares `trim_size` in `cc-config.yml`** from the same flag. The server reads the trim from `cc-config.yml` (not from the `_quarto.yml` geometry) to size the cover and the library row, so the two must agree.
 - **Titles headerless chapters.** A chapter `.qmd` with no front-matter `title:` and no top-level `#` heading gets a `title:` block — from `outline.yml` when the file's leading number matches a chapter there, otherwise from the filename (`chapter_03-getting-started.qmd` → "Getting Started", `chapter_3.qmd` → "Chapter 3"). Files that already carry a title are not touched. ProofBound only writes chapter titles on the compose paths; on upload/render an untitled chapter renders with a blank heading and TOC entry. The fix summary lists every title added — tell the user, and adjust any they don't like before uploading. When titles were added and the output dir already held a rendered PDF, that PDF is set aside as `<name>.pdf.stale` so the upload step cannot ship the old titleless render; re-render, or let the server render.
 
@@ -207,9 +207,10 @@ This:
 The optional `--title/--author/--subtitle/--description` flags override what the server reads from `_quarto.yml`/`outline.yml`/`cc-config.yml`; they populate the library row only and never change uploaded files.
 
 `--book-blurb` is the **back-cover marketing copy** (max 1200 chars), which is a
-different thing from `--description` (the book's concept, what it is about). No project
-file carries a blurb, so this flag is the only way an uploaded book arrives with back-cover
-copy. It rides the **upload path only** — `/books/render` has no such field, so on a
+different thing from `--description` (the book's concept, what it is about). The server
+reads the blurb from `blurb.md`, else from the `blurb:` key of `covers/cover-config.yml`
+(where the cover-generator skill keeps it); `--book-blurb` overrides both. The flag rides
+the **upload path only** — `/books/render` has no such field, so on a
 source-only folder the script says so rather than dropping it silently.
 
 Step 3 also prints any `warnings` the server returned. Beyond the provenance note (no
