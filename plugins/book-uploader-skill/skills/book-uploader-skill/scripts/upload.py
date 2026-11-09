@@ -160,8 +160,7 @@ def cmd_login_wait(args: argparse.Namespace) -> int:
 
 
 def cmd_logout(_args: argparse.Namespace) -> int:
-    auth.logout()
-    print("✓ Logged out")
+    auth.report_logout(auth.logout(), "✓")
     return 0
 
 

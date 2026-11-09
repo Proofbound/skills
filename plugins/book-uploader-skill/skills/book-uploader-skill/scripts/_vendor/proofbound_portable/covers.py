@@ -17,6 +17,9 @@ IMAGE_MODELS = (
     "flux-dev",
     "flux-1.1-pro",
     "gpt-image-2",
+    "nano-banana-pro",
+    "recraft-v4-pro",
+    "flux-3",
     "mock",
 )
 DEFAULT_IMAGE_MODEL = "gpt-image-2"

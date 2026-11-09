@@ -212,20 +212,52 @@ def login(open_browser: bool = True) -> dict:
     return wait_for_device_login()
 
 
-def logout() -> None:
-    """Invalidate refresh token and delete local credentials."""
-    creds = _load_credentials()
-    if creds and creds.get("refresh_token"):
+LOGOUT_SERVER_WARNING = (
+    "Warning: local credentials were deleted, but the server did not confirm the "
+    "sign-out, so your session may still be live until it expires. If this device "
+    "is shared or lost, contact ProofBound support."
+)
+
+
+def logout() -> bool:
+    """Delete local credentials and ask the server to revoke the session.
+
+    Returns True when the server confirmed (HTTP 200) or there was no server
+    session to revoke (no stored refresh token). Returns False on a non-200
+    response or a network error: the caller must warn that the session may still
+    be live (see LOGOUT_SERVER_WARNING). Local credentials are deleted in every
+    case, even if an unexpected exception propagates.
+    """
+    try:
+        creds = _load_credentials()
+        if not (creds and creds.get("refresh_token")):
+            return True
         base_url = creds.get("api_url") or get_api_url()
-        with contextlib.suppress(Exception):
-            httpx.post(
+        try:
+            resp = httpx.post(
                 f"{base_url}/auth/logout",
                 json={"refresh_token": creds["refresh_token"]},
                 timeout=AUTH_TIMEOUT,
             )
+        except (httpx.HTTPError, OSError):
+            return False
+        return resp.status_code == 200
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            CREDENTIALS_FILE.unlink()
 
-    if CREDENTIALS_FILE.exists():
-        CREDENTIALS_FILE.unlink()
+
+def report_logout(confirmed: bool, marker: str = "") -> None:
+    """Print the outcome of ``logout()``; the warning goes to stderr.
+
+    ``marker`` is the calling skill's own success glyph, so output style is unchanged.
+    """
+    prefix = f"{marker} " if marker else ""
+    if confirmed:
+        print(f"{prefix}Logged out")
+    else:
+        print(f"{prefix}Logged out locally")
+        print(LOGOUT_SERVER_WARNING, file=sys.stderr)
 
 
 def get_token() -> str:

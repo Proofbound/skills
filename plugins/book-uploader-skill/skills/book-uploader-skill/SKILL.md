@@ -2,7 +2,7 @@
 name: book-uploader-skill
 description: Upload a local Quarto project or loose .qmd chapters to a ProofBound account (validates, fixes config, scans secrets, renders if no PDF). Triggers - upload to ProofBound, import a Quarto project.
 license: ProofBound Source-Available License (see LICENSE)
-version: 0.1.12
+version: 0.1.13
 ---
 
 # ProofBound Book Uploader Skill
