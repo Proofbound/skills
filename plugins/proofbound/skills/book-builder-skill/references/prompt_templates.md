@@ -220,19 +220,13 @@ Book and chapter context come from `system.jinja2`, which accompanies every sect
 
 ## Cover Generation
 
-### `cover-front.jinja2`
+### `cover-art-director.jinja2`
 
-**Purpose**: Generate image prompt for front cover artwork
+**Purpose**: Ask an art director LLM for N structured cover briefs (server-side machinery; not part of the playbook)
 
-**Variables**:
+**Variables**: `num_concepts`, `title`, `subtitle`, `author`, `book_type`, `writing_style`, `description`, `book_context`, `style_catalog`
 
-- `title` (string) - Book title
-- `author` (string) - Author name
-- `book_idea` (string) - Book description/concept
-
-**Output**: Text prompt for AI image generation (Ideogram, DALL-E, etc.)
-
-**Usage**: Cover generation workflow in cc-template-api
+**Output**: A JSON array of briefs, validated by `proofbound_shared.cover_brief.parse_cover_briefs`; the server builds each image prompt from its brief.
 
 ### `cover-back-illustration.jinja2`
 
@@ -327,7 +321,7 @@ The `-` strips whitespace before/after the tag.
    - `chapter-generation/section.jinja2` → user prompt
    - Repeat for each section → `chapters/chapter_N.qmd`
 4. **Summary**: `summary-prompt.jinja2` → `enhanced_summary` in cc-config.yml
-5. **Cover**: `cover-front.jinja2` → image generation prompt
+5. **Cover**: `cover-art-director.jinja2` → structured cover briefs → image generation prompts
 
 ### Render Example (Python)
 

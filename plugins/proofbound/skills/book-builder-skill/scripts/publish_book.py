@@ -61,7 +61,7 @@ from pathlib import Path
 
 import httpx
 import yaml
-from auth import get_api_url, get_token, logout, start_device_login, wait_for_device_login
+from auth import get_api_url, get_token, logout, report_logout, start_device_login, wait_for_device_login
 
 # Author, blurb and word-target policy is the server's own, through
 # proofbound-portable vendored beside this script -- a real tree in the shipped
@@ -642,8 +642,7 @@ def cmd_login_wait(args):
 
 
 def cmd_logout(args):
-    logout()
-    print("✅ Logged out")
+    report_logout(logout(), "✅")
 
 
 # ============================================
