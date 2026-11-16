@@ -2,7 +2,7 @@
 name: book-uploader-skill
 description: Upload a local Quarto project or loose .qmd chapters to a ProofBound account (validates, fixes config, scans secrets, renders if no PDF). Triggers - upload to ProofBound, import a Quarto project.
 license: ProofBound Source-Available License (see LICENSE)
-version: 0.1.13
+version: 0.1.15
 ---
 
 # ProofBound Book Uploader Skill
@@ -75,10 +75,12 @@ The script returns a structured report:
 }
 ```
 
-`warnings` also lists pipe tables the renderer cannot fit, as
-`chapters/x.qmd:LINE: N-column table ... consider transposing`. They never block
-an upload; offer to transpose the table so the long dimension (years, categories)
-runs down the rows.
+`warnings` also lists table-rule findings as `path/x.qmd:LINE: ...` for every `.qmd` the upload ships (not just `chapters/`); a bare `<table>` warns that the PDF drops it (use a pipe table or a ` ```{=html} ` fence); tables
+the renderer cannot fit (`N-column table ... consider transposing`; offer to
+transpose so the long dimension runs down the rows), tables with no
+`{#tbl-}` caption, and header labels over 3 words. They never block an upload.
+`$` is not linted: whether it reads as math depends on the project's reader, and the
+render preflight checks table parsing with real Pandoc.
 
 Show the user a human-readable summary. Decide which phases to run:
 
