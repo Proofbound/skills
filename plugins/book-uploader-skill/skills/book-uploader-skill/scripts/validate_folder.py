@@ -29,7 +29,7 @@ from _quarto_output import (  # noqa: E402
 )
 from _upload_plan import SymlinkEscapeError, iter_upload_files  # noqa: E402
 from proofbound_portable.book_info import BOOK_TYPES, DECLINABLE_BOOK_FIELDS, find_blurb  # noqa: E402
-from proofbound_portable.table_check import describe, find_wide_tables  # noqa: E402
+from proofbound_portable.table_check import find_table_problems  # noqa: E402
 from proofbound_portable.trim import DEFAULT_TRIM_SIZE, TRIM_SIZES  # noqa: E402
 
 REQUIRED_FILES = ["_quarto.yml", "cc-config.yml"]
@@ -183,9 +183,27 @@ def check_book_info(project_path: Path, author: dict) -> tuple[list[str], list[s
     return blockers, warnings
 
 
-def check_wide_tables(project_path: Path, chapters: list[str]) -> list[str]:
-    """Advisory warnings for pipe tables the renderer cannot fit (never blockers)."""
+def _project_qmds(project_path: Path) -> list[str]:
+    """Every ``.qmd`` the upload ships (the book's rendered sources), sorted.
+
+    Same rule as the zip, so build output, hidden dirs and ``_freeze`` are skipped.
+    """
+    try:
+        rels = [rel for _, rel in iter_upload_files(project_path, None) if rel.suffix.lower() == ".qmd"]
+    except SymlinkEscapeError:
+        return []  # reported as a blocker by simulate_upload
+    return sorted(str(rel) for rel in rels)
+
+
+def check_tables(project_path: Path) -> tuple[list[str], list[str]]:
+    """TABLE_RULES lint over every project ``.qmd`` as (blockers, warnings).
+
+    Every finding is advisory today (width, caption, header length), so blockers is
+    empty. ``$`` is not linted: whether it reads as math depends on the reader the
+    project renders with, and the render preflight asks real Pandoc.
+    """
     trim = _yaml_mapping(project_path / "cc-config.yml").get("trim_size")
+    blockers: list[str] = []
     warnings: list[str] = []
     if trim is None:
         trim = DEFAULT_TRIM_SIZE
@@ -195,14 +213,15 @@ def check_wide_tables(project_path: Path, chapters: list[str]) -> list[str]:
             f"checking tables against {DEFAULT_TRIM_SIZE}"
         )
         trim = DEFAULT_TRIM_SIZE
-    for chapter in chapters:
+    for chapter in _project_qmds(project_path):
         try:
             text = (project_path / chapter).read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue  # advisory only: unreadable/dangling chapters are reported elsewhere
-        for table in find_wide_tables(text, trim):
-            warnings.append(f"{chapter}:{table.line}: {describe(table, trim)}")
-    return warnings
+        for problem in find_table_problems(text, trim):
+            target = blockers if problem.severity == "error" else warnings
+            target.append(f"{chapter}:{problem.line}: {problem.message}")
+    return blockers, warnings
 
 
 def build_report(project_path: Path) -> dict:
@@ -257,7 +276,9 @@ def build_report(project_path: Path) -> dict:
         warnings.append("no covers/ directory (or it is empty)")
     warnings.extend(author["warnings"])
     warnings.extend(info_warnings)
-    warnings.extend(check_wide_tables(project_path, chapters))
+    table_blockers, table_warnings = check_tables(project_path)
+    blockers.extend(table_blockers)
+    warnings.extend(table_warnings)
     if pdf_path:
         fonts = font_warning(project_path / pdf_path)
         if fonts:
