@@ -2,7 +2,7 @@
 name: book-builder-skill
 description: Conversational book creation workflow for ProofBound. Use when users want to "create a book", "help me write a book", "turn my notes into a book", or upload documents mentioning books or publishing. Guides through intake, design, TOC, and chapter/intro/summary writing locally, then publishes via the ProofBound API — the platform scaffolds the canonical Quarto project, renders the PDF, and saves the book to the user's library. Requires a ProofBound login; no local Quarto/TinyTeX needed. If the ProofBound MCP connector is available in this session, prefer its get_book_workflow (the canonical, always-current workflow); this skill is the standalone Claude Code / filesystem fallback.
 license: ProofBound Source-Available License (see LICENSE)
-version: 4.8.2
+version: 4.8.4
 ---
 
 # ProofBound Book Builder Skill
@@ -131,7 +131,7 @@ Everything in Phases 1–4 is written to a **local project directory**, e.g.
 ~/Books/<slug>/
 ├── book-state.json        # canonical state (schema v2) — managed by state.py
 ├── PROGRESS.md            # generated projection of book-state.json; never a source of truth
-├── cc-config.yml          # title, author, subtitle?, description?, writing_style?, book_type?, trim_size?
+├── cc-config.yml          # title, author, subtitle?, description?, writing_style?, book_type, trim_size?
 ├── outline.yml            # chapters: [{number, chapter_title, chapter_description?, sections}]
 ├── book-bible.md           # local style sheet for consistency; never published
 ├── research-notes.md       # (optional) source ledger: IDs, URLs, access dates, claims, open gaps
@@ -141,9 +141,9 @@ Everything in Phases 1–4 is written to a **local project directory**, e.g.
 │   └── chapter_2.qmd
 ├── introduction.md         # book preface/introduction prose
 ├── summary.md              # book summary prose
-├── blurb.md                # (optional) back-cover blurb / marketing copy, <= 1200 chars
-├── author.md               # (optional) author bio, <= 500 chars
-├── author.jpg              # (optional) author photo, JPEG/PNG, <= 5 MB
+├── blurb.md                # (optional) back-cover blurb / marketing copy
+├── author.md               # (optional) author bio
+├── author.jpg              # (optional) author photo, JPEG/PNG
 └── references.bib          # (optional) BibTeX → rendered References section
 ```
 
@@ -275,7 +275,7 @@ under `declined:` — only after the user has explicitly declined it (the
 narrative's Phase 4c). Everything but `source_materials` is forwarded to the
 platform. See `references/cc_config_schema.md` for the full field catalog.
 
-**Author photo** (optional, JPEG or PNG, max 5 MB): if the user has one, copy it
+**Author photo** (optional, JPEG or PNG): if the user has one, copy it
 to `~/Books/<slug>/author.{jpg|png}`. `publish_book.py` validates magic bytes and
 size; the platform re-validates and renders it onto the back cover.
 
@@ -437,7 +437,7 @@ Run the narrative's pre-publish checklist first. Then:
    ```bash
    uv run scripts/publish_book.py publish --project-dir ~/Books/<slug> \
      --authoring-model claude-opus-5 \
-     --workflow-version book-builder-skill/4.8.2
+     --workflow-version book-builder-skill/4.8.4
    ```
 
    This reads the local content, `POST`s it to `/books/compose`, then polls
