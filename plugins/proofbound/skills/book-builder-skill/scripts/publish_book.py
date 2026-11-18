@@ -44,9 +44,9 @@ Local content layout read by `publish` (--project-dir):
     chapters/chapter_<N>.qmd   (or .md)  — one per outline chapter
     introduction.md        book preface/introduction prose
     summary.md             book summary prose
-    blurb.md               (optional) back-cover blurb / marketing copy, <= 1200 chars
-    author.md              (optional) author bio, <= 500 chars
-    author.{jpg,jpeg,png}  (optional) author photo, <= 5 MB
+    blurb.md               (optional) back-cover blurb / marketing copy
+    author.md              (optional) author bio
+    author.{jpg,jpeg,png}  (optional) author photo
     references.bib         (optional) BibTeX entries → rendered References section
 """
 
@@ -304,7 +304,9 @@ def _gather_author_photo(project_dir: Path) -> str | None:
             continue
         raw = path.read_bytes()
         if len(raw) > MAX_PHOTO_BYTES:
-            _fail(f"author photo exceeds 5 MB: {path} ({len(raw) / 1_048_576:.1f} MB)")
+            _fail(
+                f"author photo exceeds {MAX_PHOTO_BYTES / 1_048_576:g} MB: {path} " f"({len(raw) / 1_048_576:.1f} MB)"
+            )
         # Validate by magic bytes (not extension) — server re-validates too.
         if detect_image_format(raw) is None:
             _fail(f"author photo is not a valid JPEG or PNG: {path}")
