@@ -2,7 +2,7 @@
 name: book-uploader-skill
 description: Upload a local Quarto project or loose .qmd chapters to a ProofBound account (validates, fixes config, scans secrets, renders if no PDF). Triggers - upload to ProofBound, import a Quarto project.
 license: ProofBound Source-Available License (see LICENSE)
-version: 0.1.15
+version: 0.1.16
 ---
 
 # ProofBound Book Uploader Skill
@@ -74,6 +74,8 @@ The script returns a structured report:
   "covers": { "artwork": false, "kdp_pdf": false, "lulu_pdf": false }
 }
 ```
+
+`blockers` also lists every render-policy finding as `file: key: reason`: project settings or text that ask the renderer to run commands, load code or read files outside the project (`pre-render`/`post-render`, non-managed `filters`, `engines`, a `pdf-engine` other than xelatex/pdflatex, `pdf-engine-opts`, `latex-makeindex`, `_extensions/`, executable code cells, `{{< env >}}`/`{{< embed >}}`/unknown shortcodes, path options that leave the project). They are the server's own rules, run on exactly the files the upload ships. Have the user remove or rewrite each one; there is no override.
 
 `warnings` also lists table-rule findings as `path/x.qmd:LINE: ...` for every `.qmd` the upload ships (not just `chapters/`); a bare `<table>` warns that the PDF drops it (use a pipe table or a ` ```{=html} ` fence); tables
 the renderer cannot fit (`N-column table ... consider transposing`; offer to
@@ -263,6 +265,7 @@ Wait for it to finish (poll its dashboard entry), then re-run.
 **Upload/render returns an error**: the script prints the server's `detail`. Common causes:
 
 - `401` — not logged in or token expired: run `upload.py login`
+- `upload.py run` refuses locally, before any network call, with the same render-policy findings (exit 1, every finding listed). The server answers `422 render_config_forbidden` for the same projects.
 - `422` — invalid project (missing `_quarto.yml`/`cc-config.yml`, no `.qmd`, a disallowed file type, or — for the upload path only — no PDF) — re-run validate/auto-fix
 - `413` — the zip or a file exceeds the size caps (upload 80 MB body / render 25 MB; 80 MB/file, 150 MB total decompressed)
 - `429` — a render is already in progress for this account (render path only)
@@ -274,6 +277,7 @@ Wait for it to finish (poll its dashboard entry), then re-run.
 - This skill mirrors the patterns from `cover-generator-skill` (shared `auth.py` + `~/.proofbound/credentials.json`) and `book-builder-skill` (folder validation idioms).
 - `scripts/auth.py` (login/refresh/logout against `/auth/*`) is added when the skill is packaged and is shared with the other ProofBound skills; it is not part of this skill's own source.
 - The auto-fix template is intentionally **simpler** than the platform's canonical `_quarto.yml`. The canonical template needs XeLaTeX + KOMA-Script + Crimson Pro/Inter fonts, which most local machines don't have. The platform applies the full styling when it rebuilds the book server-side.
+- The render-policy check is the server's own module (`proofbound_quarto.render_policy`, vendored into `scripts/_vendor/` like `proofbound_portable`), so there is nothing to keep in sync.
 - The client `ALLOWED_EXTENSIONS` is the server allowlist itself (`proofbound_portable.upload`, vendored into `scripts/_vendor/`), so there is nothing to keep in sync.
 - Server-side PDF rendering is supported: a folder with no PDF takes the
   `/books/render` path (submit → poll). A folder that already has a PDF takes the

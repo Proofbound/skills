@@ -27,6 +27,7 @@ from _quarto_output import (  # noqa: E402
     find_pdf as find_output_pdf,
     output_dir_names,
 )
+from _render_policy_check import check_render_policy  # noqa: E402
 from _upload_plan import SymlinkEscapeError, iter_upload_files  # noqa: E402
 from proofbound_portable.book_info import BOOK_TYPES, DECLINABLE_BOOK_FIELDS, find_blurb  # noqa: E402
 from proofbound_portable.table_check import find_table_problems  # noqa: E402
@@ -224,6 +225,17 @@ def check_tables(project_path: Path) -> tuple[list[str], list[str]]:
     return blockers, warnings
 
 
+def render_policy_blockers(project_path: Path) -> list[str]:
+    """The server's render-policy findings (``file: key: reason``), one per blocker.
+
+    Empty when a symlink escape stops the staging; that is already its own blocker.
+    """
+    try:
+        return [str(v) for v in check_render_policy(project_path)]
+    except SymlinkEscapeError:
+        return []
+
+
 def build_report(project_path: Path) -> dict:
     config_files = {f: (project_path / f).exists() for f in REQUIRED_FILES}
     optional_files = {f: (project_path / f).exists() for f in OPTIONAL_FILES}
@@ -264,6 +276,7 @@ def build_report(project_path: Path) -> dict:
         blockers.append(output_dir_error)
     if symlink_error:
         blockers.append(symlink_error)
+    blockers.extend(render_policy_blockers(project_path))
     blockers.extend(author["blockers"])
     info_blockers, info_warnings = check_book_info(project_path, author)
     blockers.extend(info_blockers)
