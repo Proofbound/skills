@@ -48,6 +48,7 @@ from _quarto_output import (
     configured_output_dir,
     find_pdf as find_output_pdf,
 )
+from _render_policy_check import check_render_policy, format_refusal
 from _upload_plan import ALLOWED_EXTENSIONS, SymlinkEscapeError, iter_upload_files  # noqa: F401 — re-exported
 
 DASHBOARD_BASE = "https://app.proofbound.com/books"
@@ -288,6 +289,22 @@ def cmd_run(args: argparse.Namespace) -> int:
         print(f"❌ Project path is not a directory: {project_path}", file=sys.stderr)
         return 2
 
+    # The server 422s a project whose configuration or text asks the renderer to run
+    # commands or read files outside it. Same code, run here, before any network
+    # call. No override: the server would refuse it anyway.
+    try:
+        configured_output_dir(project_path)
+        violations = check_render_policy(project_path)
+    except QuartoOutputDirError as exc:
+        print(f"❌ {exc}", file=sys.stderr)
+        return 1
+    except SymlinkEscapeError as exc:
+        print(f"❌ {exc}", file=sys.stderr)
+        return 1
+    if violations:
+        print(f"❌ {format_refusal(violations)}", file=sys.stderr)
+        return 1
+
     try:
         token = auth.get_token()
     except RuntimeError as exc:
@@ -310,13 +327,6 @@ def cmd_run(args: argparse.Namespace) -> int:
         if v
     }
     base_url = auth.get_api_url()
-
-    # Fail here rather than shipping a project the server will reject at intake.
-    try:
-        configured_output_dir(project_path)
-    except QuartoOutputDirError as exc:
-        print(f"❌ {exc}", file=sys.stderr)
-        return 1
 
     # getattr: callers hand-build an args namespace (the tests, and any wrapper),
     # so a missing attribute must read as "not supplied".

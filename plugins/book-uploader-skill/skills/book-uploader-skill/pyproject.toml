@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "book-uploader-skill"
-version = "0.1.15"
+version = "0.1.16"
 description = "ProofBound book uploader skill — validate a Quarto folder, auto-fix missing config, scan for secrets, then upload via the admin script"
 authors = [{name = "Proofbound", email = "team@proofbound.com"}]
 license = {text = "LicenseRef-ProofBound-Source-Available"}
@@ -30,7 +30,7 @@ dev = [
 # (Kept free of monorepo paths on purpose -- this file ships.)
 target = "claude-ai"
 runtime = true
-vendor = ["proofbound-portable"]
+vendor = ["proofbound-portable", "proofbound-quarto"]
 
 [tool.setuptools]
 packages = []
